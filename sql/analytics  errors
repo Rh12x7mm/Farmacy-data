@@ -1,0 +1,49 @@
+#запрос 1
+#выявляет и показывает препараты где отсутствует дозировка лекарственного средства и противопоказания
+SELECT brand_id, brand_name, strength FROM brand WHERE strength IS NULL;
+SELECT generic_id, generic_name FROM generic WHERE contra_indication IS NULL;
+SELECT COUNT(*) AS total_rows, COUNT(strength) AS rows_with_strength, COUNT(*) - COUNT(strength) AS rows_without_strength FROM brand;
+
+
+#запрос 2
+#выведение повторяющихся значений
+#выводит сколько раз повторяется название компаний-производителей
+SELECT manufacturer, COUNT(*) AS brands FROM brand GROUP BY manufacturer ORDER BY manufacturer;
+
+#показывает числовые границы показателей
+SELECT 'brand.price' AS field, MIN(price) AS min_value, MAX(price) AS max_value, ROUND(AVG(price),1) AS avg_value, COUNT(*) AS rows_count FROM brand
+
+UNION ALL SELECT 'employee.salary', MIN(salary), MAX(salary), ROUND(AVG(salary)), COUNT(*) FROM employee
+
+UNION ALL SELECT 'receipt_item.quantity', MIN(quantity), MAX(quantity), ROUND(AVG(quantity),2), COUNT(*) FROM receipt_item
+
+UNION ALL SELECT 'receipt_item.unit_price', MIN(unit_price), MAX(unit_price), ROUND(AVG(unit_price),1), COUNT(*) FROM receipt_item;
+
+#выводит диапазон дат
+SELECT 'receipt_date' AS field, MIN(receipt_date) AS first_value, MAX(receipt_date) AS last_value FROM receipt
+UNION ALL SELECT 'hire_date', MIN(hire_date), MAX(hire_date) FROM employee
+UNION ALL SELECT 'opened_year', MIN(opened_year), MAX(opened_year) FROM pharmacy_branch;
+
+#Запрос 3
+#проверка внешних ключей(пустой результат значит успешно)
+PRAGMA foreign_key_check; 
+
+
+#проверка на отсутствие сотрудников и чеков в филиалах
+SELECT p.branch_id, p.city
+
+(SELECT COUNT(*) FROM employee e WHERE e.branch_id = p.branch_id) AS employees,
+
+(SELECT COUNT(*) FROM receipt r WHERE r.branch_id = p.branch_id) AS receipts
+
+FROM pharmacy_branch p
+
+ORDER BY p.branch_id; 
+
+
+#проверка сотрудников без чека
+SELECT e.employee_id, e.last_name, e.position, e.branch_id
+
+FROM employee e LEFT JOIN receipt r ON r.employee_id = e.employee_id
+
+WHERE r.receipt_id IS NULL;
