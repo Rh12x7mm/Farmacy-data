@@ -1,0 +1,54 @@
+#Аналитический вопрос 1 - Как распределяются затраты компании на персонал по ключевым должностям и высокооплачиваемым сотрудникам, и как при этом выглядит
+#эффективность продаж аптечного ассортимента (выручка и объемы) в промежутке действующих медицинских веществ?
+#Базовая выборка
+#Запрос находит всех сотрудников с окладом выше 60 000 рублей, рассчитывает их годовой доход и сортирует список по убыванию
+SELECT 
+    last_name AS Фамилия, 
+    first_name AS Имя, 
+    position AS Должность, 
+    salary AS (Месячный оклад),
+    salary * 12 AS (Расчетный годовой доход)
+FROM employee
+WHERE salary > 60000
+ORDER BY salary DESC;
+
+#Агрегирование
+#Запрос группирует сотрудников по должностям и выводит полную статистику по заработным платам в каждой категории
+SELECT position AS Должность, COUNT(employee_id) AS (Количество сотрудников), SUM(salary) AS (Общий фонд зарплаты), ROUND(AVG(salary), 2) AS (Средняя зарплата),
+MIN(salary) AS (Минимальная зарплата),
+MAX(salary) AS (Максимальная зарплата) 
+FROM employee GROUP BY position ORDER BY (Общий фонд зарплаты) DESC;
+
+#Соединение таблиц
+#Запрос объединяет таблицы позиций чека receipt_item торговых наименований brand и действующих веществ generic,
+#чтобы посчитать общую выручку и количество проданных упаковок по каждому лекарственному компоненту: 
+SELECT 
+    g.generic_name AS (Действующее вещество (МНН)),
+    COUNT(DISTINCT ri.receipt_id) AS (Количество уникальных чеков),
+    SUM(ri.quantity) AS (Продано упаковок, шт),
+    ROUND(SUM(ri.quantity * ri.unit_price), 2) AS (Общая сумма продаж)
+FROM receipt_item ri
+JOIN brand b ON ri.brand_id = b.brand_id
+JOIN generic g ON b.generic_id = g.generic_id
+GROUP BY g.generic_name
+ORDER BY (Общая сумма продаж) DESC;
+
+#Аналитический вопрос 2
+#Какова общая сумма выручки по каждому филиалу аптеки за все время и к какой категории по объемам продаж (Крупный, Средний, Малый)
+#относится каждый филиал если нужны филиалы, которые принесли суммарно более 500 руб дохода?
+SELECT 
+    pb.branch_id,
+    pb.branch_name,
+    pb.city,
+    SUM(ri.quantity * ri.unit_price) AS total_revenue,
+    CASE 
+        WHEN SUM(ri.quantity * ri.unit_price) >= 1200 THEN 'Крупный филиал'
+        WHEN SUM(ri.quantity * ri.unit_price) >= 600 THEN 'Средний филиал'
+        ELSE 'Малый филиал'
+    END AS branch_segment
+FROM pharmacy_branch pb
+JOIN receipt r ON pb.branch_id = r.branch_id
+JOIN receipt_item ri ON r.receipt_id = ri.receipt_id
+GROUP BY pb.branch_id, pb.branch_name, pb.city
+HAVING SUM(ri.quantity * ri.unit_price) > 500
+ORDER BY total_revenue DESC;
