@@ -11,7 +11,7 @@ velogxx(проджект менеджер)
 mqipn(заместитель пм)
 
 
-erRinor(exel отчет)
+erRinor(exel отчет, сбор данных)
 
 
 Rh12x7mm(sql код)
